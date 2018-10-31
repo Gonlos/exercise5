@@ -1,23 +1,29 @@
 version: "3"
 services:
-<<<<<<< HEAD
-  exercise3:
-    build: .
-    ports:
-     - "9003:9003"
-=======
   exercise4:
+    env_file:
+      - .env
     build: .
+    image: exercise4
     ports:
-     - "9004:9004"
->>>>>>> 72ef50ce623791d52e755763de8db21719439fb0
+      - "${SERVICE_PORT}:${SERVICE_PORT}"
   messageapp:
-    image: cabify/backend-bootcamp-messageapp
+    image: "cabify/backend-bootcamp-messageapp:latest"
     ports:
-      - "3000:3000"
+      - "${MESSAGE_APP_PORT}:3000"
   mongodb:
     image: mongo
+    environment:
+      - SWAGGER_JSON=/foo/swagger.json
     volumes:
       - ./data/db:/data/db
     ports:
-      - 27017:27017
+      - "${DATABASE_PORT}:27017"
+  doc:
+    image: swaggerapi/swagger-ui
+    environment:
+      - SWAGGER_JSON=/doc/swagger.yml
+    volumes:
+      - .messageAppService/doc:/doc
+    ports:
+      - "${DOC_PORT}:8080"
