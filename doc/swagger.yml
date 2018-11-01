@@ -1,0 +1,71 @@
+swagger: '2.0'
+info:
+  title: Send messages App
+  description: This is an API to send messages usin MessageApp API
+  version: 1.0.0
+  contact:
+    email: gonzalo.cortazar.kao@gmail.com
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+host: localhost
+tags:
+  - name: message
+    description: Send a message to a destination
+schemes:
+  - https
+  - http
+paths:
+  /message:
+    post:
+      tags:
+        - message
+      summary: Send a message to a destination
+      description: ''
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Message object that needs to send message
+          required: true
+          schema:
+            $ref: '#/definitions/Message'
+      responses:
+        '200':
+          description: Message sent
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        default:
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/ApiResponse'
+definitions:
+  Message:
+    type: object
+    properties:
+      destination:
+        type: string
+        example: pepe
+      message:
+        type: string
+        example: Hello pepe
+  ApiResponse:
+    type: object
+    properties:
+      ok:
+        type: boolean
+      message:
+        type: string
+        example: Message sent to pepe
+  ApiResponseError:
+    type: object
+    properties:
+      ok:
+        type: boolean
+        example: false
+      message:
+        type: string
+        example: Destination is required
