@@ -2,12 +2,7 @@
 
 A pesar del sistema de registro de mensajes, los costes de envío de mensajes son muy altos y queremos limitar dichos costes.
 
-Para ello, queremos implementar una nueva funcionalidad que consiste en que el servicio tenga, inicialmente un _crédito_ de mensajes,
 y una vez consumido el crédito, empiece a devolver errores.
-
-Esta funcionalidad se implementará, de nuevo, ampliando el API que ofrece nuestro servicio.
-
-## 1. Almacenar el crédito
 
 - Ampliar el modelo de datos para tener un _crédito_ global.
 

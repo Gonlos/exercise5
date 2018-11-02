@@ -1,30 +1,28 @@
 var express = require("express");
 const router = express.Router();
 const MessageApp = require("../MessageApp");
-const debug = require('debug')('express:message');
-const {validateBody,middlewareValidationError}= require('../validateBody')
+const debug = require("debug")("express:message");
+const { validateBody, middlewareValidationError } = require("../validateBody");
 
-router.post("/",validateBody,(req, res, next) => {
+router.post("/", validateBody, (req, res, next) => {
   const { destination, message } = req.body;
   MessageApp.send({ destination, message })
-  .then(response => {
-    const {ok,message} = response
-    res
-      .status(200)
-      .json({
+    .then(response => {
+      const { ok, message } = response;
+      res.status(200).json({
         ok,
         message
       });
-  })
-  .catch(error => {
-    debug(error)
-    res.status(500)
-    .json({
-          ok: false,
-          message:error.message
-        })
-  })
-})
+    })
+    .catch(error => {
+      debug(error);
+      res.status(500).json({
+        ok: false,
+        message: error.message
+      });
+    });
+});
+
 router.use(middlewareValidationError);
 
 module.exports = router;
