@@ -2,8 +2,9 @@ var express = require("express");
 const router = express.Router();
 const MessageApp = require("../MessageApp");
 const debug = require('debug')('express:message');
+const {validateBody,middlewareValidationError}= require('../validateBody')
 
-router.post("/", (req, res, next) => {
+router.post("/",validateBody,(req, res, next) => {
   const { destination, message } = req.body;
   MessageApp.send({ destination, message })
   .then(response => {
@@ -13,7 +14,7 @@ router.post("/", (req, res, next) => {
       .json({
         ok,
         message
-});
+      });
   })
   .catch(error => {
     debug(error)
@@ -24,5 +25,6 @@ router.post("/", (req, res, next) => {
         })
   })
 })
+router.use(middlewareValidationError);
 
 module.exports = router;
