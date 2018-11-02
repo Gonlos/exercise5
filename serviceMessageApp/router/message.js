@@ -1,6 +1,7 @@
 var express = require("express");
 const router = express.Router();
 const MessageApp = require("../MessageApp");
+const debug = require('debug')('express:message');
 
 router.post("/", (req, res, next) => {
   const { destination, message } = req.body;
