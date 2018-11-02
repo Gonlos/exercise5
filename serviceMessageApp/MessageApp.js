@@ -23,15 +23,15 @@ class MessageApp {
     let error=stringValidation(destination,50)
     if (error){
       return Promise.resolve({
-        status: 400,
-        data: error
+        ok: false,
+        message: error
       })
     }
     error=stringValidation(message,200)
     if(error){
       return Promise.resolve({
-        status: 400,
-        data: error
+        ok: false,
+        message: error
       })
     }
   
@@ -40,8 +40,8 @@ class MessageApp {
       .then(response => {
         debug("ok",response)
         return {
-          status: response.status,
-          data: response.data
+          ok: true,
+          message: response.data
         };
       })
       .catch(error => {
@@ -49,8 +49,8 @@ class MessageApp {
       let data;
       data = error.response == undefined ? error : error.response.data; 
       return {
-        status: 500,
-        data
+          ok: false,
+          message:error.message
         };
       });
   }

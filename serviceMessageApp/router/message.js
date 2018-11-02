@@ -7,16 +7,22 @@ router.post("/", (req, res, next) => {
   const { destination, message } = req.body;
   MessageApp.send({ destination, message })
   .then(response => {
+    const {ok,message} = response
     res
-      .status(response.status)
-      .send(
-        `Env: ${
-          process.env.NODE_ENV || "local"
-        },\nStatus: ${
-          response.status
-        }, \nData: ${response.data}`
-      );
-  });
+      .status(200)
+      .json({
+        ok,
+        message
 });
+  })
+  .catch(error => {
+    debug(error)
+    res.status(500)
+    .json({
+          ok: false,
+          message:error.message
+        })
+  })
+})
 
 module.exports = router;
