@@ -1,6 +1,7 @@
 const debug = require('debug')('express:log:MessageApp');
 const axios = require("axios").create({
-  baseURL: `http://${process.env.MESSAGE_APP || "localhost"}:3000/message`
+  baseURL: `http://${process.env.MESSAGE_APP || "localhost"}:3000/message`,
+  timeout: 3000
 });
 const isString = string => {
   return typeof string == "string";
