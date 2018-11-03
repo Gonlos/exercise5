@@ -2,7 +2,7 @@ const {
   Validator,
   ValidationError
 } = require("express-json-validator-middleware");
-const debug = require("debug")("express:validateBody");
+const debug = require("debug")("debug:validateBody");
 
 const validate = new Validator({ allErrors: true }).validate;
 

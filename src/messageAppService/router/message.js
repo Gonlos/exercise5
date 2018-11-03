@@ -1,7 +1,6 @@
 var express = require("express");
 const router = express.Router();
-const MessageApp = require("../MessageApp");
-const debug = require("debug")("express:message");
+const MessageApp = require("../../messageAppClient/MessageApp");
 const { validateBody, middlewareValidationError } = require("../validateBody");
 
 router.post("/", validateBody, (req, res, next) => {
@@ -26,3 +25,4 @@ router.post("/", validateBody, (req, res, next) => {
 router.use(middlewareValidationError);
 
 module.exports = router;
+

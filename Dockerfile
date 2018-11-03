@@ -1,5 +1,5 @@
 FROM node:latest
-ADD ./serviceMessageApp /app
-WORKDIR /app
+ADD ./src /app
+WORKDIR /app/messageAppService
 RUN npm install
 CMD ["node","index.js"]
