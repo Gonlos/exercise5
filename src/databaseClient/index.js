@@ -49,6 +49,7 @@ class DbMessageApp {
   }
 
   confirmMessage(messageId) {
+    debug("confirmMessage", messageId);
     return this.Message.findOneAndUpdate({ _id: messageId }, { state: "confirmed" });
   }
 

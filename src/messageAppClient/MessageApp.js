@@ -12,7 +12,6 @@ const axios = require("axios").create({
 
 const DbMessageApp = require("../databaseClient");
 const dataBase = new DbMessageApp("", "", DATABASE, DATABASE_PORT);
-const dataBase = new DbMessageApp('','',DATABASE,DATABASE_PORT);
 
 const isString = string => {
   return typeof string == "string";
@@ -72,13 +71,14 @@ class MessageApp {
       .createMessage({ destination, message })
       .then(databaseMessage => {
         debug("createMessage:ok:", databaseMessage);
-        const { messageId } = databaseMessage;
+        const messageId = databaseMessage._id;
         // dataBase.addMessageBackup(messageId,"not_confirmed");
         return this.sendMessage({ destination, message })
           .then(ok => {
             debug("sendMessage:ok: ", ok);
             // dataBase.addMessageBackup(messageId, "confirmed");
-            return dataBase.confirmMessage(messageId).then(() => {
+            return dataBase.confirmMessage(messageId).then(confirm => {
+              debug("confirmMessage:ok", confirm);
               // dataBase.deleteMessageBackup(messageId);
               return Promise.resolve({
                 message: "Message sent and confirmed"
@@ -89,7 +89,8 @@ class MessageApp {
             debug("sendMessage:error: ", error.message);
             if (error.code == "ECONNABORTED") {
               // dataBase.addMessageBackup(messageId, "not_sent");
-              return dataBase.notSentMessage(messageId).then(() => {
+              return dataBase.notSentMessage(messageId).then(response => {
+                debug("notSentMessage:ok:", response);
                 // dataBase.deleteMessageBackup(messageId);
                 return Promise.resolve({
                   message: "Message sent but not confirmed"
