@@ -3,7 +3,7 @@ const debug = require("debug")("debug:index");
 const bodyParser = require("body-parser");
 
 const app = express();
-
+const SERVICE_PORT = process.env.SERVICE_PORT || 9004;
 app.use(bodyParser.json({ limit: "5mb" }));
 app.use((err, req, res, next) => {
   debug(err.message);
@@ -19,6 +19,6 @@ app.use(function(err, req, res, next) {
   res.status(200).json({ ok: false, message: err });
 });
 
-app.listen(process.env.SERVICE_PORT || 9001, function() {
-  console.log(`Server Express Ready on port ${process.env.SERVICE_PORT || 9001}!`);
+app.listen(SERVICE_PORT, function() {
+  console.log(`Server Express Ready on port ${SERVICE_PORT}!`);
 });

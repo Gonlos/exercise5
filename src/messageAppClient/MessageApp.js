@@ -2,8 +2,8 @@ const debug = require("debug")("debug:MessageApp");
 
 const MESSAGE_APP = process.env.MESSAGE_APP || "localhost";
 const MESSAGE_APP_PORT = process.env.MESSAGE_APP_PORT || 3000;
-const DATABASE = process.env.DATABASE || "mongodb";
-const DATABASE_PORT = process.env.DATABASE_PORT || "27017";
+const DATABASE = process.env.DATABASE || "localhost";
+const DATABASE_PORT = process.env.DATABASE_PORT || 27017;
 
 const axios = require("axios").create({
   baseURL: `http://${MESSAGE_APP}:${MESSAGE_APP_PORT}/message`,
@@ -41,7 +41,7 @@ class MessageApp {
         });
       })
       .catch(error => {
-        debug("axios:error", error);
+        debug("axios:error", error.message);
         return Promise.reject(error);
       });
   }
