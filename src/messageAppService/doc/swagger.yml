@@ -16,10 +16,10 @@ schemes:
   - https
   - http
 paths:
-  /message:
+  /messages:
     post:
       tags:
-        - message
+        - messages
       summary: Send a message to a destination
       description: ""
       consumes:

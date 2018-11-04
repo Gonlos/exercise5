@@ -1,9 +1,9 @@
 const debug = require("debug")("debug:MessageApp");
 
-const MESSAGE_APP = process.env.MESSAGE_APP || 'localhost'
-const MESSAGE_APP_PORT = process.env.MESSAGE_APP_PORT || 3000
-const DATABASE = process.env.DATABASE || 'mongodb'
-const DATABASE_PORT = process.env.DATABASE_PORT || '27017'
+const MESSAGE_APP = process.env.MESSAGE_APP || "localhost";
+const MESSAGE_APP_PORT = process.env.MESSAGE_APP_PORT || 3000;
+const DATABASE = process.env.DATABASE || "mongodb";
+const DATABASE_PORT = process.env.DATABASE_PORT || "27017";
 
 const axios = require("axios").create({
   baseURL: `http://${MESSAGE_APP}:${MESSAGE_APP_PORT}/message`,
@@ -11,7 +11,9 @@ const axios = require("axios").create({
 });
 
 const DbMessageApp = require("../databaseClient");
+const dataBase = new DbMessageApp("", "", DATABASE, DATABASE_PORT);
 const dataBase = new DbMessageApp('','',DATABASE,DATABASE_PORT);
+
 const isString = string => {
   return typeof string == "string";
 };
@@ -46,29 +48,26 @@ class MessageApp {
   }
 
   getSentMessages() {
-    return dataBase.getSentMessages()
-      .catch(error => {
-        debug("getSentMessages:error", error);
-        return Promise.reject(error);
-      })
+    return dataBase.getSentMessages().catch(error => {
+      debug("getSentMessages:error", error);
+      return Promise.reject(error);
+    });
   }
 
   send({ destination, message }) {
     let error = stringValidation(destination, 50);
     if (error) {
       return Promise.resolve({
-        ok: false,
         message: error
       });
     }
     error = stringValidation(message, 200);
     if (error) {
       return Promise.resolve({
-        ok: false,
         message: error
       });
     }
-  
+
     return dataBase
       .createMessage({ destination, message })
       .then(databaseMessage => {
@@ -110,7 +109,6 @@ class MessageApp {
         return Promise.reject(error);
       });
   }
-  
 }
 
 module.exports = new MessageApp();

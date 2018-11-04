@@ -8,7 +8,6 @@ y una vez consumido el crédito, empiece a devolver errores.
 
 ## 2. Pagar por cada mensaje
 
-- El endpoint `/message` de tipo POST debe, ahora, comprobar que hay crédito suficiente para poder enviar el mensaje.
 - En caso afirmativo, debe enviar el mensaje y, si se envía correctamente, decrementar el _crédito_ restante.
 - En caso negativo, se devuelve un mensaje de error indicando que no hay crédito suficiente.
 

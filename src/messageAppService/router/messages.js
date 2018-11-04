@@ -29,7 +29,7 @@ router.post("/", validateBody, (req, res, next) => {
       debug("ok", response);
       const { ok, message } = response;
       res.status(200).json({
-        ok,
+        ok: true,
         message
       });
     })
@@ -45,4 +45,3 @@ router.post("/", validateBody, (req, res, next) => {
 router.use(middlewareValidationError);
 
 module.exports = router;
-
