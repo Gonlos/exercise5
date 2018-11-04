@@ -43,6 +43,15 @@ class MessageApp {
         return Promise.reject(error);
       });
   }
+
+  getSentMessages() {
+    return dataBase.getSentMessages()
+      .catch(error => {
+        debug("getSentMessages:error", error);
+        return Promise.reject(error);
+      })
+  }
+
   send({ destination, message }) {
     let error = stringValidation(destination, 50);
     if (error) {

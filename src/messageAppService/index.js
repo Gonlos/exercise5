@@ -10,8 +10,8 @@ app.use((err, req, res, next) => {
 });
 app.use(bodyParser.urlencoded({ extended: false }));
 
-const message = require("./router/message");
-app.use("/message", message);
+const messages = require("./router/messages");
+app.use("/messages", messages);
 
 app.use(function(err, req, res, next) {
   debug(err);

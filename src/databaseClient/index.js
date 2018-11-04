@@ -55,6 +55,10 @@ class DbMessageApp {
   notSentMessage(messageId) {
     return this.Message.findOneAndUpdate({ _id: messageId }, { state: "not_sent" });
   }
+
+  getSentMessages() {
+    return this.Message.find();
+  }
 }
 
 module.exports = DbMessageApp;
