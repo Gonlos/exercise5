@@ -1,3 +1,4 @@
+const debug = require("debug")("debug:MessageApp");
 
 const MESSAGE_APP = process.env.MESSAGE_APP || 'localhost'
 const MESSAGE_APP_PORT = process.env.MESSAGE_APP_PORT || 3000

@@ -1,5 +1,5 @@
 const express = require("express");
-const debug = require("debug")("express:index");
+const debug = require("debug")("debug:index");
 const bodyParser = require("body-parser");
 const app = express();
 
