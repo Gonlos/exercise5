@@ -1,16 +1,12 @@
 version: "3"
 services:
-<<<<<<< HEAD
-  exercise3:
+  exercise5:
     build: .
     ports:
-     - "9003:9003"
-=======
-  exercise4:
-    build: .
-    ports:
-     - "9004:9004"
->>>>>>> 72ef50ce623791d52e755763de8db21719439fb0
+      - "9005:9005"
+    links:
+      - messageapp
+      - mongodb
   messageapp:
     image: cabify/backend-bootcamp-messageapp
     ports:
