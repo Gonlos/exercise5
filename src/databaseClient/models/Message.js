@@ -3,13 +3,20 @@ const Schema = mongoose.Schema;
 
 const messageSchema = new Schema(
   {
-    sendingOrder: Number,
+    uuidLock: String,
     destination: String,
     message: String,
     state: {
-      type: String,
-      enum: ["not_confirmed", "not_sent", "confirmed"],
-      default: "not_confirmed"
+      delivery: {
+        type: String,
+        enum: ["not_confirmed", "not_sent", "confirmed"],
+        default: "not_confirmed"
+      },
+      payment: {
+        type: String,
+        enum: ["not_confirmed", "not_payed", "confirmed"],
+        default: "not_confirmed"
+      }
     }
   },
   {

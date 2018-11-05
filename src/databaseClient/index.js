@@ -1,4 +1,6 @@
 const debug = require("debug")("debug:dbMessageApp");
+const uuidv1 = require("uuid/v1");
+const moment = require("moment");
 
 const toMilliseconds = seconds => {
   return seconds * 1000;
@@ -13,6 +15,7 @@ class DbMessageApp {
     this.reconnects = 0;
     this.mongoose = require("mongoose");
     this.Message = require("./models/Message");
+    this.Credit = require("./models/Credit");
     this.connectDb(this.uri);
   }
 
