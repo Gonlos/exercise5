@@ -74,13 +74,28 @@ class MessageApp {
         const { uuidLock } = databaseMessage;
         return this.sendMessage({ uuidLock, destination, message })
           .then(ok => {
+            let sendingIsConfirmed, paymentIsConfirmed;
             debug("sendMessage:ok: ", ok);
-            return dataBase.confirmMessage(uuidLock).then(confirm => {
+            dataBase
+              .confirmMessage(uuidLock)
+              .then(confirm => {
               debug("confirmMessage:ok", confirm);
-              // dataBase.deleteMessageBackup(messageId);
-              return Promise.resolve({
-                message: "Message sent and confirmed"
+                return true;
+              })
+              .catch(() => {
+                return false;
               });
+            return dataBase
+              .pay(uuidLock)
+              .then(credit => {
+                debug("pay:ok", credit);
+                dataBase.confirmMessagePayment(uuidLock);
+                return Promise.resolve({ message: "Message sent and payed" });
+              })
+              .catch(error => {
+                debug("pay:catch", error);
+                dataBase.notPayedMessage(uuidLock);
+                return Promise.resolve({ message: "Message sent but not payed" });
             });
           })
           .catch(error => {
@@ -88,9 +103,18 @@ class MessageApp {
             if (error.code == "ECONNABORTED") {
               return dataBase.notSentMessage(uuidLock).then(response => {
                 debug("notSentMessage:ok:", response);
-                // dataBase.deleteMessageBackup(messageId);
+                return dataBase
+                  .pay(uuidLock)
+                  .then(credit => {
+                    debug("pay:ok", credit);
+                    dataBase.confirmMessagePayment(uuidLock);
+                    return Promise.resolve({ message: "Message payed but sending not confirm" });
+                  })
+                  .catch(error => {
+                    debug("pay:catch", error);
                 return Promise.resolve({
-                  message: "Message sent but not confirmed"
+                      message: "Message sent but not confirm and not payed"
+                    });
                 });
               });
             }

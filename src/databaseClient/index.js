@@ -60,6 +60,13 @@ class DbMessageApp {
       .catch(error => Promise.reject({ message: error.message }));
   }
 
+  pay(uuidLock) {
+    return this.Credit.findOneAndUpdate(
+      { lock: uuidLock },
+      { $inc: { balance: -1 } },
+      { new: true }
+    );
+  }
 
   confirmMessage(uuidLock) {
     debug("confirmMessage", uuidLock);
@@ -70,13 +77,13 @@ class DbMessageApp {
     return this.Message.findOneAndUpdate({ uuidLock }, { state: { delivery: "not_sent" } });
   }
 
-  confirmMessage(messageId) {
-    debug("confirmMessage", messageId);
-    return this.Message.findOneAndUpdate({ _id: messageId }, { state: "confirmed" });
+  confirmMessagePayment(uuidLock) {
+    debug("confirmMessagePayment", uuidLock);
+    return this.Message.findOneAndUpdate({ uuidLock }, { state: { payment: "confirmed" } });
   }
 
-  notSentMessage(messageId) {
-    return this.Message.findOneAndUpdate({ _id: messageId }, { state: "not_sent" });
+  notPayedMessage(uuidLock) {
+    return this.Message.findOneAndUpdate({ uuidLock }, { state: { payment: "not_payed" } });
   }
 
   getSentMessages() {
