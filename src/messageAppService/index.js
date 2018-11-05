@@ -14,6 +14,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 const messages = require("./router/messages");
 app.use("/messages", messages);
 
+const credit = require("./router/credit");
+app.use("/credit", credit);
+
 app.use(function(err, req, res, next) {
   debug(err);
   res.status(200).json({ ok: false, message: err });

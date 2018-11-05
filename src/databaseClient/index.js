@@ -128,6 +128,14 @@ class DbMessageApp {
       debug("unlock")
     );
   }
+
+  increaseCredit(amount) {
+    return this.Credit.findOneAndUpdate(
+      { balance: { $ne: null } },
+      { $inc: { balance: amount } },
+      { new: true }
+    );
+  }
 }
 
 module.exports = DbMessageApp;

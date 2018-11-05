@@ -135,6 +135,16 @@ class MessageApp {
         return Promise.reject(error);
       });
   }
+
+  increaseCredit(amount) {
+    return dataBase
+      .increaseCredit(amount)
+      .then(credit => Promise.resolve({ message: `Credit increased to ${credit.balance}` }))
+      .catch(error => {
+        debug("increaseCredit:error", error);
+        return Promise.reject(error.message);
+      });
+  }
 }
 
 module.exports = new MessageApp();
