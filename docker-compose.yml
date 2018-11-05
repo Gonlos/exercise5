@@ -1,19 +1,29 @@
 version: "3"
 services:
-  exercise5:
+  exercise4:
+    env_file:
+      - .env
     build: .
+    image: exercise4
     ports:
-      - "9005:9005"
-    links:
-      - messageapp
-      - mongodb
+      - "${SERVICE_PORT}:${SERVICE_PORT}"
   messageapp:
-    image: cabify/backend-bootcamp-messageapp
+    image: "cabify/backend-bootcamp-messageapp:latest"
     ports:
-      - "3000:3000"
+      - "${MESSAGE_APP_PORT}:3000"
   mongodb:
     image: mongo
+    environment:
+      - SWAGGER_JSON=/foo/swagger.json
     volumes:
       - ./data/db:/data/db
     ports:
-      - 27017:27017
+      - "${DATABASE_PORT}:27017"
+  doc:
+    image: swaggerapi/swagger-ui
+    environment:
+      - SWAGGER_JSON=/doc/swagger.yml
+    volumes:
+      - .messageAppService/doc:/doc
+    ports:
+      - "${DOC_PORT}:8080"
