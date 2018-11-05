@@ -91,48 +91,42 @@ class DbMessageApp {
   }
 
   haveCredit() {
-    return this.Credit.find()
-      .then(credits => {
-        if (credits.length == 0) return Promise.resolve(false);
-        let uuid = uuidv1();
-        const secondsOfLock = moment()
-          .subtract(4, "seconds")
-          .toDate();
-        const queryLock = {
-          $and: [
-            { balance: { $gte: 1 } },
-            {
-              $or: [
-                { lock: uuid },
-                { lock: "" },
-                { lock: null },
-                { updated_at: { $lte: secondsOfLock } }
-              ]
-            }
-          ]
-        };
-        const updateLock = { lock: uuid };
-        const options = { new: true };
-
-        return this.Credit.findOneAndUpdate(queryLock, updateLock, options)
-          .then(credit => {
-            debug("findCredit", credit);
-            if (credit == null) return Promise.reject({ message: "Locked credit" });
-            debug("findCredit:balance", credit.balance);
-            if (credit.balance > 0) {
-              return Promise.resolve(credit.lock);
-            }
-            return Promise.resolve(false);
-          })
-          .catch(error => {
-            debug("findCredit:catch", error);
-            return Promise.reject({ message: error.message });
-          });
+    return this.lock()
+      .then(credit => {
+        debug("findCredit", credit);
+        if (credit == null) return Promise.reject({ message: "Locked credit" });
+        debug("findCredit:balance", credit.balance);
+        if (credit.balance > 0) {
+          return Promise.resolve(credit.lock);
+        }
+        this.unlock();
+        return Promise.resolve(false);
       })
       .catch(error => {
-        debug("haveCredit:credits:catch", error);
+        debug("findCredit:catch", error);
         return Promise.reject({ message: error.message });
       });
+  }
+
+  lock() {
+    let uuid = uuidv1();
+    const secondsOfLock = moment()
+      .subtract(4, "seconds")
+      .toDate();
+    const queryLock = {
+      $or: [{ lock: uuid }, { lock: "" }, { lock: null }, { updated_at: { $lte: secondsOfLock } }]
+    };
+    const updateLock = { lock: uuid };
+    const options = { new: true, project: { lock: 1, balance: 1 } };
+    debug("Try lock");
+    return this.Credit.findOneAndUpdate(queryLock, updateLock, options);
+  }
+
+  unlock() {
+    debug("unlock");
+    this.Credit.findOneAndUpdate({ lock: { $ne: "" } }, { lock: "" }, { new: true }).then(r =>
+      debug("unlock")
+    );
   }
 }
 

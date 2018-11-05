@@ -79,7 +79,7 @@ class MessageApp {
             dataBase
               .confirmMessage(uuidLock)
               .then(confirm => {
-              debug("confirmMessage:ok", confirm);
+                debug("confirmMessage:ok", confirm);
                 return true;
               })
               .catch(() => {
@@ -88,15 +88,17 @@ class MessageApp {
             return dataBase
               .pay(uuidLock)
               .then(credit => {
+                dataBase.unlock();
                 debug("pay:ok", credit);
                 dataBase.confirmMessagePayment(uuidLock);
                 return Promise.resolve({ message: "Message sent and payed" });
               })
               .catch(error => {
+                dataBase.unlock();
                 debug("pay:catch", error);
                 dataBase.notPayedMessage(uuidLock);
                 return Promise.resolve({ message: "Message sent but not payed" });
-            });
+              });
           })
           .catch(error => {
             debug("sendMessage:error: ", error.message);
@@ -106,16 +108,18 @@ class MessageApp {
                 return dataBase
                   .pay(uuidLock)
                   .then(credit => {
+                    dataBase.unlock();
                     debug("pay:ok", credit);
                     dataBase.confirmMessagePayment(uuidLock);
                     return Promise.resolve({ message: "Message payed but sending not confirm" });
                   })
                   .catch(error => {
+                    dataBase.unlock();
                     debug("pay:catch", error);
-                return Promise.resolve({
+                    return Promise.resolve({
                       message: "Message sent but not confirm and not payed"
                     });
-                });
+                  });
               });
             }
             return Promise.reject({
