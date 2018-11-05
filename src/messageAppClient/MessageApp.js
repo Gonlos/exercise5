@@ -71,13 +71,11 @@ class MessageApp {
       .createMessage({ destination, message })
       .then(databaseMessage => {
         debug("createMessage:ok:", databaseMessage);
-        const messageId = databaseMessage._id;
-        // dataBase.addMessageBackup(messageId,"not_confirmed");
-        return this.sendMessage({ destination, message })
+        const { uuidLock } = databaseMessage;
+        return this.sendMessage({ uuidLock, destination, message })
           .then(ok => {
             debug("sendMessage:ok: ", ok);
-            // dataBase.addMessageBackup(messageId, "confirmed");
-            return dataBase.confirmMessage(messageId).then(confirm => {
+            return dataBase.confirmMessage(uuidLock).then(confirm => {
               debug("confirmMessage:ok", confirm);
               // dataBase.deleteMessageBackup(messageId);
               return Promise.resolve({
@@ -88,8 +86,7 @@ class MessageApp {
           .catch(error => {
             debug("sendMessage:error: ", error.message);
             if (error.code == "ECONNABORTED") {
-              // dataBase.addMessageBackup(messageId, "not_sent");
-              return dataBase.notSentMessage(messageId).then(response => {
+              return dataBase.notSentMessage(uuidLock).then(response => {
                 debug("notSentMessage:ok:", response);
                 // dataBase.deleteMessageBackup(messageId);
                 return Promise.resolve({
