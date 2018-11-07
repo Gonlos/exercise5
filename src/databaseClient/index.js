@@ -164,22 +164,50 @@ class DbMessageApp {
     const updateLock = { lock: uuid };
     const options = { new: true, project: { lock: 1, balance: 1 } };
     debug("Try lock");
-    return this.Credit.findOneAndUpdate(queryLock, updateLock, options);
+    if (this.isConnect(this.DB.backup)) {
+      return Promise.all([
+        this.DB.main.Credit.findOneAndUpdate(queryLock, updateLock, options),
+        this.DB.backup.Credit.findOneAndUpdate(queryLock, updateLock, options)
+      ]).then(locks => Promise.resolve(locks[0]));
+  }
+    return this.DB.main.Credit.findOneAndUpdate(queryLock, updateLock, options);
   }
 
   unlock() {
     debug("unlock");
-    this.Credit.findOneAndUpdate({ lock: { $ne: "" } }, { lock: "" }, { new: true }).then(r =>
-      debug("unlock")
+    if (this.isConnect(this.DB.backup)) {
+      this.DB.main.backup.findOneAndUpdate({ lock: { $ne: "" } }, { lock: "" }, { new: true });
+    }
+    this.DB.main.Credit.findOneAndUpdate({ lock: { $ne: "" } }, { lock: "" }, { new: true }).then(
+      () => debug("unlock")
     );
   }
 
   increaseCredit(amount) {
-    return this.Credit.findOneAndUpdate(
-      { balance: { $ne: null } },
-      { $inc: { balance: amount } },
-      { new: true }
-    );
+    let query = { balance: { $ne: null } };
+    let updated = { $inc: { balance: amount } };
+    let returnNew = { new: true };
+    if (this.isConnect(this.DB.backup)) {
+      return Promise.all([
+        this.DB.main.Credit.findOneAndUpdate(query, update, returnNew),
+        this.DB.backup.Credit.findOneAndUpdate(query, update, returnNew)
+      ]);
+    }
+    return this.DB.main.Credit.findOneAndUpdate(query, update, returnNew);
+  }
+
+  pay(uuidLock) {
+    let query = { lock: uuidLock };
+    let update = { $inc: { balance: -1 } };
+    let returnNew = { new: true };
+    if (this.isConnect(this.DB.backup)) {
+      return Promise.all([
+        this.DB.main.Credit.findOneAndUpdate(query, update, returnNew),
+        this.DB.backup.Credit.findOneAndUpdate(query, update, returnNew)
+      ]).then(credits => Promise.resolve(credits[0]));
+    }
+    return this.DB.main.Credit.findOneAndUpdate(query, update, returnNew);
+  }
   }
 }
 
