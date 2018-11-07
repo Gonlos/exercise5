@@ -66,8 +66,9 @@ class DbMessageApp {
     setTimeout(() => this.connectDb(uri), toMilliseconds(delay));
   }
 
-  isConnect() {
-    return this.mongoose.connection.readyState == 1;
+  isConnect(db) {
+    debug("isConnect", db.readyState);
+    return db.readyState == 1;
   }
 
   createMessage({ destination, message }) {
@@ -75,7 +76,10 @@ class DbMessageApp {
       .then(uuidLock => {
         debug("haveCredit:ok", uuidLock);
         if (uuidLock) {
-          return this.Message.create({ destination, message, uuidLock });
+          if (this.isConnect(this.DB.backup)) {
+            this.DB.backup.Message.create({ destination, message, uuidLock });
+          }
+          return this.DB.main.Message.create({ destination, message, uuidLock });
         } else if (uuidLock === false) {
           return Promise.reject({ message: `There's no credit` });
         }
@@ -93,24 +97,42 @@ class DbMessageApp {
 
   confirmMessage(uuidLock) {
     debug("confirmMessage", uuidLock);
-    return this.Message.findOneAndUpdate({ uuidLock }, { state: { delivery: "confirmed" } });
+    if (this.isConnect(this.DB.backup)) {
+      this.DB.backup.Message.findOneAndUpdate({ uuidLock }, { state: { delivery: "confirmed" } });
+  }
+    return this.DB.main.Message.findOneAndUpdate(
+      { uuidLock },
+      { state: { delivery: "confirmed" } }
+    );
   }
 
   notSentMessage(uuidLock) {
-    return this.Message.findOneAndUpdate({ uuidLock }, { state: { delivery: "not_sent" } });
+    if (this.isConnect(this.DB.backup)) {
+      this.DB.backup.Message.findOneAndUpdate({ uuidLock }, { state: { delivery: "not_sent" } });
+  }
+    return this.DB.main.Message.findOneAndUpdate({ uuidLock }, { state: { delivery: "not_sent" } });
   }
 
   confirmMessagePayment(uuidLock) {
     debug("confirmMessagePayment", uuidLock);
-    return this.Message.findOneAndUpdate({ uuidLock }, { state: { payment: "confirmed" } });
+    if (this.isConnect(this.DB.backup)) {
+      this.DB.backup.Message.findOneAndUpdate({ uuidLock }, { state: { payment: "confirmed" } });
+  }
+    return this.DB.main.Message.findOneAndUpdate({ uuidLock }, { state: { payment: "confirmed" } });
   }
 
   notPayedMessage(uuidLock) {
-    return this.Message.findOneAndUpdate({ uuidLock }, { state: { payment: "not_payed" } });
+    if (this.isConnect(this.DB.backup)) {
+      this.DB.backup.Message.findOneAndUpdate({ uuidLock }, { state: { payment: "not_payed" } });
+  }
+    return this.DB.main.Message.findOneAndUpdate({ uuidLock }, { state: { payment: "not_payed" } });
   }
 
   getSentMessages() {
-    return this.Message.find();
+    if (this.isConnect(this.DB.backup)) {
+      this.DB.backup.Message.find();
+  }
+    return this.DB.main.Message.find();
   }
 
   haveCredit() {
