@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-
+const DB = mongoose.createConnection("mongodb://localhost:27017/MessageApp", {
+  useNewUrlParser: true
+});
 const messageSchema = new Schema(
   {
     uuidLock: String,
@@ -27,6 +29,4 @@ const messageSchema = new Schema(
   }
 );
 
-const Message = mongoose.model("Message", messageSchema);
-
-module.exports = Message;
+module.exports = DB => DB.model("Message", messageSchema);

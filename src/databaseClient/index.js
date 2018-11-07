@@ -1,7 +1,7 @@
 const debug = require("debug")("debug:dbMessageApp");
 const uuidv1 = require("uuid/v1");
 const moment = require("moment");
-
+const mongoose = require("mongoose");
 const toMilliseconds = seconds => {
   return seconds * 1000;
 };
@@ -11,27 +11,50 @@ const INC_SECONDS_DELAY = 2;
 
 class DbMessageApp {
   constructor(user, password, url, port) {
-    this.uri = `mongodb://${url}:${port}/messageApp`;
+    let hostname1, hostname2, port2;
+    if (url == "localhost") {
+      hostname1 = "localhost";
+      hostname2 = "localhost";
+      port2 = +port + 1;
+    } else {
+      hostname1 = url + "1";
+      hostname2 = url + "2";
+      port2 = port;
+    }
+    this.uri1 = `mongodb://${hostname1}:${port}/messageApp`;
+    this.uri2 = `mongodb://${hostname2}:${port2}/messageApp`;
     this.reconnects = 0;
-    this.mongoose = require("mongoose");
-    this.Message = require("./models/Message");
-    this.Credit = require("./models/Credit");
-    this.connectDb(this.uri);
+    this.DB1 = this.connectDb(this.uri1, { useNewUrlParser: true });
+    this.DB2 = this.connectDb(this.uri2, { useNewUrlParser: true });
+    this.DB = { main: this.DB1, backup: this.DB2 };
   }
 
   connectDb(uri) {
-    this.mongoose
-      .connect(
-        this.uri,
-        { useNewUrlParser: true }
-      )
-      .then(x => {
-        console.log(`Connected to Mongo! Database name: "${x.connections[0].name}"`);
-        this.reconnect = 0;
+    return mongoose
+      .createConnection(uri, { useNewUrlParser: true })
+      .then(conn => {
+        // debug("connectDb", conn);
+        require("./models/Credit")(conn);
+        require("./models/Message")(conn);
+        debug("models", Object.keys(conn.models));
+        conn.on("disconnected", a => {
+          debug("onDisconnected", `${conn.host}:${conn.port}/${conn.name}`);
+        });
+        conn.on("reconnected", a => {
+          debug("onReconnected", `${conn.host}:${conn.port}/${conn.name}`);
+        });
+        conn.on("connected", a => {
+          debug("onConnected", `${conn.host}:${conn.port}/${conn.name}`);
+        });
+        this.isConnect(conn);
+        console.log(`Connected to Mongo! Database ${conn.host}:${conn.port}/${conn.name}`);
+        this.reconnects = 0;
+        return Promise.resolve(conn);
       })
       .catch(err => {
         console.error("Error connecting to mongo", err.message);
-        this.reconnect(uri);
+        debug(this.DB1);
+        return this.reconnect(uri);
       });
   }
 

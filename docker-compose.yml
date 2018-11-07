@@ -1,24 +1,28 @@
 version: "3"
 services:
-  exercise4:
+  exercise5:
     env_file:
       - .env
     build: .
-    image: exercise4
+    image: exercise5
     ports:
       - "${SERVICE_PORT}:${SERVICE_PORT}"
   messageapp:
     image: "cabify/backend-bootcamp-messageapp:latest"
     ports:
       - "${MESSAGE_APP_PORT}:3000"
-  mongodb:
+  mongodb1:
     image: mongo
-    environment:
-      - SWAGGER_JSON=/foo/swagger.json
     volumes:
-      - ./data/db:/data/db
+      - ./data/db1:/data/db
     ports:
-      - "${DATABASE_PORT}:27017"
+      - "${DATABASE1_PORT}:27017"
+  mongodb2:
+    image: mongo
+    volumes:
+      - ./data/db2:/data/db
+    ports:
+      - "${DATABASE2_PORT}:27017"
   doc:
     image: swaggerapi/swagger-ui
     environment:

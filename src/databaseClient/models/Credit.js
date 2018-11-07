@@ -14,6 +14,4 @@ const creditSchema = new Schema(
   }
 );
 
-const Credit = mongoose.model("Credit", creditSchema);
-
-module.exports = Credit;
+module.exports = DB => DB.model("Credit", creditSchema);
