@@ -24,16 +24,15 @@ class DbMessageApp {
     this.uri1 = `mongodb://${hostname1}:${port}/messageApp`;
     this.uri2 = `mongodb://${hostname2}:${port2}/messageApp`;
     this.reconnects = 0;
-    this.DB1 = this.connectDb(this.uri1, { useNewUrlParser: true });
-    this.DB2 = this.connectDb(this.uri2, { useNewUrlParser: true });
-    this.DB = { main: this.DB1, backup: this.DB2 };
+    this.DB = {};
+    this.connectDb(this.uri1, "main"), this.connectDb(this.uri2, "backup");
   }
 
-  connectDb(uri) {
+  connectDb(uri, env) {
     return mongoose
       .createConnection(uri, { useNewUrlParser: true })
       .then(conn => {
-        // debug("connectDb", conn);
+        this.DB[env] = conn;
         require("./models/Credit")(conn);
         require("./models/Message")(conn);
         debug("models", Object.keys(conn.models));
@@ -49,11 +48,10 @@ class DbMessageApp {
         this.isConnect(conn);
         console.log(`Connected to Mongo! Database ${conn.host}:${conn.port}/${conn.name}`);
         this.reconnects = 0;
-        return Promise.resolve(conn);
+        return conn;
       })
       .catch(err => {
         console.error("Error connecting to mongo", err.message);
-        debug(this.DB1);
         return this.reconnect(uri);
       });
   }
@@ -73,34 +71,41 @@ class DbMessageApp {
 
   createMessage({ destination, message }) {
     return this.haveCredit()
-      .then(uuidLock => {
+      .then(({ credit, uuidLock }) => {
         debug("haveCredit:ok", uuidLock);
         if (uuidLock) {
           if (this.isConnect(this.DB.backup)) {
-            this.DB.backup.Message.create({ destination, message, uuidLock });
+            debug("lanzo backup");
+            this.DB.backup.models.Message.create({ destination, message, uuidLock }).catch(() =>
+              console.log("backup catch")
+            );
           }
-          return this.DB.main.Message.create({ destination, message, uuidLock });
+          debug("lanzo main");
+          return this.DB.main.models.Message.create({ destination, message, uuidLock }).then(
+            databaseMessage => {
+              return Promise.resolve({ databaseMessage, oldCredit: credit });
+              console.log("backup");
+            }
+          );
         } else if (uuidLock === false) {
           return Promise.reject({ message: `There's no credit` });
         }
       })
-      .catch(error => Promise.reject({ message: error.message }));
-  }
-
-  pay(uuidLock) {
-    return this.Credit.findOneAndUpdate(
-      { lock: uuidLock },
-      { $inc: { balance: -1 } },
-      { new: true }
-    );
+      .catch(error => {
+        debug("haveCredit:catch", error);
+        return Promise.reject({ message: error.message });
+      });
   }
 
   confirmMessage(uuidLock) {
     debug("confirmMessage", uuidLock);
     if (this.isConnect(this.DB.backup)) {
-      this.DB.backup.Message.findOneAndUpdate({ uuidLock }, { state: { delivery: "confirmed" } });
-  }
-    return this.DB.main.Message.findOneAndUpdate(
+      this.DB.backup.models.Message.findOneAndUpdate(
+        { uuidLock },
+        { state: { delivery: "confirmed" } }
+      );
+    }
+    return this.DB.main.models.Message.findOneAndUpdate(
       { uuidLock },
       { state: { delivery: "confirmed" } }
     );
@@ -108,44 +113,62 @@ class DbMessageApp {
 
   notSentMessage(uuidLock) {
     if (this.isConnect(this.DB.backup)) {
-      this.DB.backup.Message.findOneAndUpdate({ uuidLock }, { state: { delivery: "not_sent" } });
-  }
-    return this.DB.main.Message.findOneAndUpdate({ uuidLock }, { state: { delivery: "not_sent" } });
+      this.DB.backup.models.Message.findOneAndUpdate(
+        { uuidLock },
+        { state: { delivery: "not_sent" } }
+      );
+    }
+    return this.DB.main.models.Message.findOneAndUpdate(
+      { uuidLock },
+      { state: { delivery: "not_sent" } }
+    );
   }
 
   confirmMessagePayment(uuidLock) {
     debug("confirmMessagePayment", uuidLock);
     if (this.isConnect(this.DB.backup)) {
-      this.DB.backup.Message.findOneAndUpdate({ uuidLock }, { state: { payment: "confirmed" } });
-  }
-    return this.DB.main.Message.findOneAndUpdate({ uuidLock }, { state: { payment: "confirmed" } });
+      this.DB.backup.models.Message.findOneAndUpdate(
+        { uuidLock },
+        { state: { payment: "confirmed" } }
+      );
+    }
+    return this.DB.main.models.Message.findOneAndUpdate(
+      { uuidLock },
+      { state: { payment: "confirmed" } }
+    );
   }
 
   notPayedMessage(uuidLock) {
     if (this.isConnect(this.DB.backup)) {
-      this.DB.backup.Message.findOneAndUpdate({ uuidLock }, { state: { payment: "not_payed" } });
-  }
-    return this.DB.main.Message.findOneAndUpdate({ uuidLock }, { state: { payment: "not_payed" } });
+      this.DB.backup.models.Message.findOneAndUpdate(
+        { uuidLock },
+        { state: { payment: "not_payed" } }
+      );
+    }
+    return this.DB.main.models.Message.findOneAndUpdate(
+      { uuidLock },
+      { state: { payment: "not_payed" } }
+    );
   }
 
   getSentMessages() {
     if (this.isConnect(this.DB.backup)) {
-      this.DB.backup.Message.find();
-  }
-    return this.DB.main.Message.find();
+      this.DB.backup.models.Message.find();
+    }
+    return this.DB.main.models.Message.find();
   }
 
   haveCredit() {
     return this.lock()
-      .then(credit => {
+      .then(({ credit, uuidLock }) => {
         debug("findCredit", credit);
         if (credit == null) return Promise.reject({ message: "Locked credit" });
         debug("findCredit:balance", credit.balance);
         if (credit.balance > 0) {
-          return Promise.resolve(credit.lock);
+          return Promise.resolve({ credit, uuidLock });
         }
         this.unlock();
-        return Promise.resolve(false);
+        return Promise.resolve({ credit: false, uuidLock });
       })
       .catch(error => {
         debug("findCredit:catch", error);
@@ -162,53 +185,69 @@ class DbMessageApp {
       $or: [{ lock: uuid }, { lock: "" }, { lock: null }, { updated_at: { $lte: secondsOfLock } }]
     };
     const updateLock = { lock: uuid };
-    const options = { new: true, project: { lock: 1, balance: 1 } };
+    const options = { project: { lock: 1, balance: 1 } };
     debug("Try lock");
     if (this.isConnect(this.DB.backup)) {
       return Promise.all([
-        this.DB.main.Credit.findOneAndUpdate(queryLock, updateLock, options),
-        this.DB.backup.Credit.findOneAndUpdate(queryLock, updateLock, options)
-      ]).then(locks => Promise.resolve(locks[0]));
-  }
-    return this.DB.main.Credit.findOneAndUpdate(queryLock, updateLock, options);
+        this.DB.main.models.Credit.findOneAndUpdate(queryLock, updateLock, options),
+        this.DB.backup.models.Credit.findOneAndUpdate(queryLock, updateLock, options)
+      ]).then(locks => Promise.resolve({ credit: locks[0], uuidLock: uuid }));
+    }
+    return this.DB.main.models.Credit.findOneAndUpdate(queryLock, updateLock, options).then(lock =>
+      Promise.resolve({ credit: lock, uuidLock: uuid })
+    );
   }
 
   unlock() {
     debug("unlock");
     if (this.isConnect(this.DB.backup)) {
-      this.DB.main.backup.findOneAndUpdate({ lock: { $ne: "" } }, { lock: "" }, { new: true });
+      this.DB.backup.models.Credit.findOneAndUpdate(
+        { lock: { $ne: "" } },
+        { lock: "" },
+        { new: true }
+      );
     }
-    this.DB.main.Credit.findOneAndUpdate({ lock: { $ne: "" } }, { lock: "" }, { new: true }).then(
-      () => debug("unlock")
-    );
+    this.DB.main.models.Credit.findOneAndUpdate(
+      { lock: { $ne: "" } },
+      { lock: "" },
+      { new: true }
+    ).then(() => debug("unlock"));
   }
 
   increaseCredit(amount) {
     let query = { balance: { $ne: null } };
-    let updated = { $inc: { balance: amount } };
-    let returnNew = { new: true };
+    let update = { $inc: { balance: amount } };
+    let returnNew = { new: true, upsert: true };
     if (this.isConnect(this.DB.backup)) {
       return Promise.all([
-        this.DB.main.Credit.findOneAndUpdate(query, update, returnNew),
-        this.DB.backup.Credit.findOneAndUpdate(query, update, returnNew)
-      ]);
+        this.DB.main.models.Credit.findOneAndUpdate(query, update, returnNew),
+        this.DB.backup.models.Credit.findOneAndUpdate(query, update, returnNew)
+      ]).then(balances => Promise.resolve(balances[0]));
     }
-    return this.DB.main.Credit.findOneAndUpdate(query, update, returnNew);
+    return this.DB.main.models.Credit.findOneAndUpdate(query, update, returnNew);
   }
 
   pay(uuidLock) {
+    debug("pay");
     let query = { lock: uuidLock };
     let update = { $inc: { balance: -1 } };
     let returnNew = { new: true };
-    if (this.isConnect(this.DB.backup)) {
+    // if (this.isConnect(this.DB.backup)) {
+    if (true) {
       return Promise.all([
-        this.DB.main.Credit.findOneAndUpdate(query, update, returnNew),
-        this.DB.backup.Credit.findOneAndUpdate(query, update, returnNew)
+        this.DB.main.models.Credit.findOneAndUpdate(query, update, returnNew),
+        this.DB.backup.models.Credit.findOneAndUpdate(query, update, returnNew)
       ]).then(credits => Promise.resolve(credits[0]));
     }
-    return this.DB.main.Credit.findOneAndUpdate(query, update, returnNew);
+    return this.DB.main.models.Credit.findOneAndUpdate(query, update, returnNew);
   }
+  payRollback(object) {
+    debug("payRollback", object);
+    object.markModified();
+    return object.save();
   }
+
+  manageReplica() {}
 }
 
 module.exports = DbMessageApp;

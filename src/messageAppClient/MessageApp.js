@@ -69,9 +69,10 @@ class MessageApp {
 
     return dataBase
       .createMessage({ destination, message })
-      .then(databaseMessage => {
-        debug("createMessage:ok:", databaseMessage);
-        const { uuidLock } = databaseMessage;
+      .then(newMessage => {
+        const { databaseMessage, oldCredit } = newMessage;
+        debug("createMessage:ok:", databaseMessage, oldCredit);
+        const uuidLock = databaseMessage.lock;
         return this.sendMessage({ uuidLock, destination, message })
           .then(ok => {
             let sendingIsConfirmed, paymentIsConfirmed;
@@ -80,10 +81,10 @@ class MessageApp {
               .confirmMessage(uuidLock)
               .then(confirm => {
                 debug("confirmMessage:ok", confirm);
-                return true;
+                // return Promise.resolve(true);
               })
               .catch(() => {
-                return false;
+                // return Promise.reject(false);
               });
             return dataBase
               .pay(uuidLock)
@@ -94,7 +95,7 @@ class MessageApp {
                 return Promise.resolve({ message: "Message sent and payed" });
               })
               .catch(error => {
-                dataBase.unlock();
+                dataBase.payRollback(oldCredit).then(() => dataBase.unlock());
                 debug("pay:catch", error);
                 dataBase.notPayedMessage(uuidLock);
                 return Promise.resolve({ message: "Message sent but not payed" });
@@ -114,7 +115,7 @@ class MessageApp {
                     return Promise.resolve({ message: "Message payed but sending not confirm" });
                   })
                   .catch(error => {
-                    dataBase.unlock();
+                    dataBase.payRollback(oldCredit).then(() => dataBase.unlock());
                     debug("pay:catch", error);
                     return Promise.resolve({
                       message: "Message sent but not confirm and not payed"
